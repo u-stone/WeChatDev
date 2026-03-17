@@ -21,11 +21,13 @@
 12. [定时器与动画帧](#12-定时器与动画帧)
 13. [编码 / 解码工具](#13-编码--解码工具)
 14. [SharedArrayBuffer](#14-sharedarraybuffer)
-15. [DevTools 内部 WASM Sourcemap 解析器](#15-devtools-内部-wasm-sourcemap-解析器)
+15. [DevTools 内部 WASM Sourcemap 解析器（组件缺失）](#15-devtools-内部-wasm-sourcemap-解析器)
 16. [CMake Generator Expression 在 emcmake 中不生效](#16-cmake-generator-expression-在-emcmake-中不生效)
 17. [--emit-source-map 在 Emscripten 3.x/5.x 中被废弃](#17---emit-source-map-在-emscripten-3x--5x-中被废弃)
 18. [WASM Sourcemap 的 --source-map-base 路径](#18-wasm-sourcemap-的---source-map-base-路径)
-19. [npm 包兼容性](#19-npm-包兼容性)
+19. [DevTools 将 WASM 模块映射为 wasm:// 虚拟 URL](#19-devtools-将-wasm-模块映射为-wasm-虚拟-url)
+20. [DevTools 内部 Sourcemap 解析器崩溃](#20-devtools-内部-sourcemap-解析器崩溃)
+21. [npm 包兼容性](#21-npm-包兼容性)
 
 ---
 
@@ -421,20 +423,6 @@ SharedArrayBuffer will require cross-origin isolation as of M92
 
 ---
 
-## 14. SharedArrayBuffer
-
-### 标准 Web
-需要页面设置 `Cross-Origin-Opener-Policy` 和 `Cross-Origin-Embedder-Policy` 响应头才能使用。
-
-### 微信小游戏
-日志中出现警告：
-```
-SharedArrayBuffer will require cross-origin isolation as of M92
-```
-该警告来自开发者工具内嵌的 Chromium 内核，**不影响小游戏实际运行**（小游戏本身并不使用 SharedArrayBuffer）。可安全忽略。
-
----
-
 ## 15. DevTools 内部 WASM Sourcemap 解析器
 
 ### 现象
@@ -536,7 +524,58 @@ DevTools 将该 URL 解析为相对于 WASM 文件的路径，最终尝试加载
 
 ---
 
-## 19. npm 包兼容性
+## 19. DevTools 将 WASM 模块映射为 `wasm://` 虚拟 URL
+
+### 现象
+```
+Could not load content for wasm://wasm/demo.wasm.map:
+HTTP error: status code 404, net::ERR_UNKNOWN_URL_SCHEME
+```
+即使 `demo.wasm.map` 文件存在于 `minigame/wasm/` 目录，sourcemap 仍然无法被 DevTools 加载。
+
+### 原因
+当 DevTools 通过 `WXWebAssembly.instantiate(filePath)` 加载 WASM 模块后，它会给该模块分配一个内部虚拟 URL：
+```
+wasm://wasm/<hash>
+```
+DevTools 以这个虚拟 URL 为基准，将 WASM 二进制中的 `sourceMappingURL=./demo.wasm.map` 解析为：
+```
+wasm://wasm/demo.wasm.map
+```
+然后尝试用 HTTP fetch 这个 URL——但 `wasm://` 不是真实的网络协议，导致 `ERR_UNKNOWN_URL_SCHEME`。
+
+### 影响
+- 小游戏**正常运行**不受影响（WASM 逻辑完全正确）
+- C++ 断点调试功能在该版本 DevTools 中**不可用**
+
+### 这是 DevTools 的已知限制
+`--source-map-base` 无论设置什么相对路径，都无法绕过这个问题，因为 DevTools 强制使用 `wasm://` 作为 WASM 模块的基准 URL。
+
+可能的解决途径（供参考，未经验证）：
+- 更新微信开发者工具到支持本地文件协议 WASM sourcemap 的版本
+- 将 `--source-map-base` 设为 DevTools 本地 HTTP 服务的绝对 URL（但 DevTools 端口每次可能变化）
+
+---
+
+## 20. DevTools 内部 Sourcemap 解析器崩溃
+
+### 现象
+```
+Cannot read property 'indexOf' of undefined
+    at Y (core.wxvpkg ...)
+```
+该错误发生在 DevTools 启动阶段（polyfill 加载之前），堆栈完全在 DevTools 内部代码（`core.wxvpkg`）中。
+
+### 原因
+DevTools 内置的 sourcemap 解析器在处理某个文件（可能是 Emscripten 生成的 `demo.js` 末尾的 `//# sourceMappingURL` 注释）时，遇到了 `undefined` 值并崩溃。这是 DevTools 自身 bug，与项目代码无关。
+
+### 影响
+- 小游戏**正常运行**不受影响（错误发生在 DevTools 初始化阶段）
+- **解决方法**：升级微信开发者工具
+
+---
+
+## 21. npm 包兼容性
 
 ### 标准 Web / Node.js
 大多数 npm 包可直接使用。
