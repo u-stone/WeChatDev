@@ -1,0 +1,46 @@
+{
+  "description": "WeChat Mini Game + C++ WASM Demo",
+  "projectname": "wasm-demo",
+  "appid": "wx44ce985ec3fc8f11",
+  "compileType": "miniGame",
+  "libVersion": "2.19.4",
+  "packOptions": {
+    "ignore": [
+      {
+        "value": "cpp-module",
+        "type": "folder"
+      }
+    ],
+    "include": []
+  },
+  "setting": {
+    "minified": false,
+    "es6": true,
+    "enhance": true,
+    "checkSiteMap": false,
+    "urlCheck": false,
+    "postcss": false,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "condition": {},
+  "simulatorPluginLibVersion": {},
+  "isGameTourist": false,
+  "editorSetting": {}
+}

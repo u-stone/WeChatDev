@@ -1,0 +1,11 @@
+# This directory is populated by the C++ build step.
+#
+# Run the following from the project root to generate these files:
+#
+#   cd cpp-module
+#   ./build.sh debug
+#
+# Output files placed here:
+#   demo.js        — Emscripten JavaScript glue code
+#   demo.wasm      — WebAssembly binary
+#   demo.wasm.map  — Source map for C++ debugging in WeChat DevTools
