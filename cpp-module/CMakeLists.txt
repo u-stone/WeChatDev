@@ -3,11 +3,21 @@ project(demo)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Output directory: place compiled assets directly into the minigame project
+# Output directory: place compiled assets directly into the minigame and web projects
 set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/../minigame/wasm")
+set(WEB_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/../web/wasm")
 
-# Ensure the output directory exists before linking
+# Clean old output files before building
+file(REMOVE "${OUTPUT_DIR}/demo.js")
+file(REMOVE "${OUTPUT_DIR}/demo.wasm")
+file(REMOVE "${OUTPUT_DIR}/demo.wasm.map")
+file(REMOVE "${WEB_OUTPUT_DIR}/demo.js")
+file(REMOVE "${WEB_OUTPUT_DIR}/demo.wasm")
+file(REMOVE "${WEB_OUTPUT_DIR}/demo.wasm.map")
+
+# Ensure the output directories exist before linking
 file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+file(MAKE_DIRECTORY "${WEB_OUTPUT_DIR}")
 
 add_executable(demo
     src/demo.cpp
@@ -18,6 +28,17 @@ set_target_properties(demo PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}"
     OUTPUT_NAME "demo"
     SUFFIX ".js"
+)
+
+# Also copy to web/wasm directory
+add_custom_command(TARGET demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${OUTPUT_DIR}/demo.js"
+        "${WEB_OUTPUT_DIR}/demo.js"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${OUTPUT_DIR}/demo.wasm"
+        "${WEB_OUTPUT_DIR}/demo.wasm"
+    COMMENT "Copying WASM files to web/wasm directory"
 )
 
 # ── Emscripten link flags ──────────────────────────────────────────────────────
@@ -46,25 +67,31 @@ target_link_options(demo PRIVATE
 )
 
 # ── Build-type specific flags ─────────────────────────────────────────────────
-option(EMBED_SOURCEMAP "Embed SourceMap into WASM as Data URI" OFF)
+# Debug mode selection:
+#   sourcemap_external (default) — Generate external .wasm.map file
+#   sourcemap_embed             — Embed sourcemap as Data URI in .wasm
+#   dwarf                       — Use DWARF debug symbols in .wasm
+#   none                        — No debug symbols (release)
+
+option(DEBUG_MODE "Debug mode: sourcemap_external (default), sourcemap_embed, or dwarf" "sourcemap_external")
+set(DEBUG_MODE_VALUES "sourcemap_external" "sourcemap_embed" "dwarf" "none")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    # 1. Always generate external SourceMap initially
-    target_compile_options(demo PRIVATE "-gsource-map")
-    target_link_options(demo PRIVATE "-gsource-map" "--source-map-base=./")
-
-    # 2. Conditionally embed the SourceMap content into the .wasm file
-    if(EMBED_SOURCEMAP AND INTERNAL_PYTHON_EXE)
-        set(EMBED_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_map.py")
-        set(WASM_PATH "${OUTPUT_DIR}/demo.wasm")
-        set(MAP_PATH "${OUTPUT_DIR}/demo.wasm.map")
-
-        add_custom_command(TARGET demo POST_BUILD
-            COMMAND "${INTERNAL_PYTHON_EXE}" "${EMBED_SCRIPT}" "${WASM_PATH}" "${MAP_PATH}"
-            COMMENT "Embedding SourceMap into demo.wasm..."
-        )
+    if(DEBUG_MODE STREQUAL "sourcemap_external")
+        # Sourcemap external mode (default): Generate external SourceMap
+        message(STATUS "Building in sourcemap_external debug mode (external .wasm.map file)")
+        target_link_options(demo PRIVATE "-gsource-map" "--source-map-base=./")
+    elseif(DEBUG_MODE STREQUAL "sourcemap_embed")
+        # Sourcemap embed mode: Embed SourceMap as Data URI in WASM
+        message(STATUS "Building in sourcemap_embed debug mode (embedded Data URI)")
+        target_link_options(demo PRIVATE "-gsource-map" "--source-map-base=./")
+    elseif(DEBUG_MODE STREQUAL "dwarf")
+        # DWARF mode: Generate DWARF debug info in WASM
+        message(STATUS "Building in DWARF debug mode")
+        target_compile_options(demo PRIVATE "-g")
+        target_link_options(demo PRIVATE "-g")
     else()
-        message(STATUS "SourceMap will be kept as an external file (demo.wasm.map).")
+        message(FATAL_ERROR "Unknown debug mode: ${DEBUG_MODE}. Valid values: ${DEBUG_MODE_VALUES}")
     endif()
 else()
     target_link_options(demo PRIVATE "-O2")

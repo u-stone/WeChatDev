@@ -25,20 +25,32 @@ WeChatDev/
 │   ├── build.sh                     一键构建脚本
 │   └── README.md                    C++ 模块详细说明
 │
-└── minigame/                        ← 子项目：微信小游戏
-    ├── game.js                      入口：动画循环 + Canvas 渲染
-    ├── game.json                    小游戏基础配置
-    ├── project.config.json          微信开发者工具项目配置
+├── minigame/                        ← 子项目：微信小游戏
+│   ├── game.js                      入口：动画循环 + Canvas 渲染
+│   ├── game.json                    小游戏基础配置
+│   ├── project.config.json          微信开发者工具项目配置
+│   ├── js/
+│   │   └── wasm-loader.js           WASM 模块加载与函数绑定
+│   ├── wasm/                        ← 构建产物（由 build.sh 生成）
+│   │   ├── demo.js                  Emscripten 胶水代码
+│   │   ├── demo.wasm                WebAssembly 二进制
+│   │   └── demo.wasm.map            C++ 调试 sourcemap（debug 构建）
+│   └── README.md                    JS 模块详细说明
+│
+└── web/                             ← 子项目：标准浏览器 Web Demo
+    ├── index.html                   HTML 入口
+    ├── style.css                    样式文件
     ├── js/
+    │   ├── game.js                  入口：动画循环 + Canvas 渲染
     │   └── wasm-loader.js           WASM 模块加载与函数绑定
-    ├── wasm/                        ← 构建产物（由 build.sh 生成）
+    ├── wasm/                        ← 构建产物（由 cpp-module 生成）
     │   ├── demo.js                  Emscripten 胶水代码
     │   ├── demo.wasm                WebAssembly 二进制
     │   └── demo.wasm.map            C++ 调试 sourcemap（debug 构建）
-    └── README.md                    JS 模块详细说明
+    └── README.md                    Web Demo 详细说明
 ```
 
-> `minigame/wasm/` 中的文件由 `cpp-module/build.sh` 自动生成，**无需手动创建**。
+> `minigame/wasm/` 和 `web/wasm/` 中的文件由 `cpp-module/build.sh` 自动生成，**无需手动创建**。
 
 ---
 
@@ -97,7 +109,49 @@ cd WeChatDev/cpp-module
 
 ---
 
-## 运行小游戏
+## 运行 Web Demo（推荐用于调试）
+
+Web Demo 可以在标准浏览器中运行，支持完整的 Chrome DevTools C++ 调试功能。
+
+### 快速启动（推荐）
+
+```bash
+# Windows PowerShell
+.\quickstart.ps1
+
+# macOS/Linux
+./quickstart.sh
+```
+
+脚本会自动：
+1. 检查并编译 C++ WASM 模块
+2. 启动本地 HTTP 服务器
+3. 在浏览器中打开项目
+
+### 手动启动
+
+```bash
+cd WeChatDev/web
+
+# 方法 1：使用 Python
+python -m http.server 8080
+
+# 方法 2：使用 Node.js（需要先安装 http-server）
+npm install -g http-server
+http-server -p 8080
+```
+
+然后在浏览器中访问：`http://localhost:8080`
+
+**优势**：
+- ✅ 支持 Chrome DevTools C++ 断点调试
+- ✅ 支持 WASM sourcemap 自动加载
+- ✅ 无需微信开发者工具
+- ✅ 调试体验更完整
+
+---
+
+## 运行小游戏（微信平台）
 
 1. 打开**微信开发者工具** → 导入项目 → 选择 `WeChatDev/minigame/` 目录
 2. AppID 使用「**游客身份**」（或填入真实 AppID）
@@ -105,14 +159,79 @@ cd WeChatDev/cpp-module
 
 ---
 
-## 调试
+## 调试 C++（WebAssembly）
 
-### 调试 JavaScript
+本项目支持三种调试模式，均在 `cpp-module` 中配置：
 
-- **Console**：查看 `[WASM]` 前缀日志
-- **Sources → game.js / wasm-loader.js**：打断点，单步调试
+### 构建命令
+
+**macOS / Linux:**
+```bash
+cd cpp-module
+./build.sh                    # Sourcemap 外置模式（默认）
+./build.sh debug --embed      # Sourcemap 内嵌模式
+./build.sh debug --dwarf      # DWARF 模式
+./build.sh release            # -O2 优化，适合发布
+```
+
+**Windows (PowerShell):**
+```powershell
+cd cpp-module
+.\build.ps1 debug             # Sourcemap 外置模式（默认）
+.\build.ps1 debug -Embed      # Sourcemap 内嵌模式
+.\build.ps1 debug -Dwarf      # DWARF 模式
+.\build.ps1 release           # -O2 优化，适合发布
+```
+
+### 调试模式说明
+
+| 模式 | 标志 | 输出文件 | 适用场景 |
+|------|------|---------|---------|
+| **sourcemap_external** *(默认)* | `-gsource-map` | `demo.wasm.map` | 微信开发者工具、需要外部 sourcemap 的环境 |
+| **sourcemap_embed** | `-gsource-map` | 内嵌在 `demo.wasm` | 单文件部署，避免额外 .map 文件请求 |
+| **dwarf** | `-g4` | 内置在 `demo.wasm` | Chrome DevTools 直接调试 C++ 源码 |
+
+### 调试模式对比
+
+| 特性 | sourcemap_external | sourcemap_embed | dwarf |
+|------|-------------------|-----------------|-------|
+| **调试信息位置** | 外部 `.wasm.map` | 内嵌在 `.wasm` | 内嵌在 `.wasm` |
+| **文件数量** | 3 个 | 2 个 | 2 个 |
+| **WASM 文件大小** | 较小 | 稍大 | 最大 |
+| **加载速度** | 需要额外加载 .map | 一次性加载 | 一次性加载 |
+| **Chrome DevTools** | 需要 .map 文件 | 自动加载 | 自动加载 |
+| **微信开发者工具** | ✅ 支持 | ✅ 支持 | ✅ 支持 |
+
+### 快速启动（推荐）
+
+```bash
+# Windows PowerShell
+.\quickstart.ps1          # sourcemap_external (默认)
+.\quickstart.ps1 -Embed   # sourcemap_embed
+.\quickstart.ps1 -Dwarf   # dwarf
+
+# macOS/Linux
+./quickstart.sh           # sourcemap_external (默认)
+./quickstart.sh --embed   # sourcemap_embed
+./quickstart.sh --dwarf   # dwarf
+```
+
+脚本会自动：
+1. 检查并编译 C++ WASM 模块（使用指定的调试模式）
+2. 启动本地 HTTP 服务器
+3. 在浏览器中打开项目
 
 ### 调试 C++（WASM Sourcemap）
+
+#### Web Demo（推荐）
+
+1. 在浏览器中打开 DevTools（F12）
+2. 切换到 **Sources** 面板
+3. 展开 `wasm://` 虚拟目录
+4. 找到并打开 `world.cpp` 或 `demo.cpp`
+5. 点击行号设置断点
+
+#### 微信开发者工具（有限支持）
 
 > 需 debug 构建 + 微信开发者工具 ≥ 1.05.x
 
@@ -125,7 +244,7 @@ cd WeChatDev/cpp-module
 | 现象 | 排查 |
 |---|---|
 | WASM 加载失败 | 确认 `minigame/wasm/demo.js` 和 `demo.wasm` 存在 |
-| C++ 断点不生效 | 确认使用 debug 构建；检查 `demo.wasm.map` 存在 |
+| C++ 断点不生效 | 确认使用 debug 构建；检查 `demo.wasm.map` 存在（sourcemap_external） |
 | `emcc` 找不到 | `source ~/emsdk/emsdk_env.sh` |
 | CMake 配置失败 | 确认在 `cpp-module/` 目录内执行 `./build.sh` |
 | 切换 debug/release 后编译异常 | `build.sh` 会自动清理 `build/` 目录重新配置 |
