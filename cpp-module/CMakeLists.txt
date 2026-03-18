@@ -27,7 +27,6 @@ target_link_options(demo PRIVATE
     "-sWASM=1"
     # Wrap output in a factory function so it can be require()'d in WeChat Mini Game
     "-sMODULARIZE=1"
-    "-sSEPARATE_DWARF_URL=1"
     "-sEXPORT_NAME=DemoModule"
     # Exported C functions (Emscripten requires underscore-prefixed names)
     "-sEXPORTED_FUNCTIONS=[\
@@ -47,22 +46,26 @@ target_link_options(demo PRIVATE
 )
 
 # ── Build-type specific flags ─────────────────────────────────────────────────
-# NOTE: --emit-source-map was removed in Emscripten 3.x+; the correct flag
-# is -gsource-map (passed to both compile and link steps).
+option(EMBED_SOURCEMAP "Embed SourceMap into WASM as Data URI" OFF)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    # 1. 编译选项保持生成外部 SourceMap
+    # 1. Always generate external SourceMap initially
     target_compile_options(demo PRIVATE "-gsource-map")
     target_link_options(demo PRIVATE "-gsource-map" "--source-map-base=./")
 
-    # 2. 调用外部 Python 脚本，将 .map 内容以 Data URI 形式追加到 .wasm 结尾
-    set(EMBED_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_map.py")
-    set(WASM_PATH "${OUTPUT_DIR}/demo.wasm")
-    set(MAP_PATH "${OUTPUT_DIR}/demo.wasm.map")
+    # 2. Conditionally embed the SourceMap content into the .wasm file
+    if(EMBED_SOURCEMAP AND INTERNAL_PYTHON_EXE)
+        set(EMBED_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/embed_map.py")
+        set(WASM_PATH "${OUTPUT_DIR}/demo.wasm")
+        set(MAP_PATH "${OUTPUT_DIR}/demo.wasm.map")
 
-    add_custom_command(TARGET demo POST_BUILD
-        COMMAND "${INTERNAL_PYTHON_EXE}" "${EMBED_SCRIPT}" "${WASM_PATH}" "${MAP_PATH}"
-        COMMENT "Embedding SourceMap into demo.wasm..."
-    )
+        add_custom_command(TARGET demo POST_BUILD
+            COMMAND "${INTERNAL_PYTHON_EXE}" "${EMBED_SCRIPT}" "${WASM_PATH}" "${MAP_PATH}"
+            COMMENT "Embedding SourceMap into demo.wasm..."
+        )
+    else()
+        message(STATUS "SourceMap will be kept as an external file (demo.wasm.map).")
+    endif()
 else()
     target_link_options(demo PRIVATE "-O2")
 endif()
