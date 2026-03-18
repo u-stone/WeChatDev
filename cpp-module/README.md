@@ -210,10 +210,18 @@ source ~/emsdk/emsdk_env.sh
 
 ### 构建命令
 
+**macOS / Linux:**
 ```bash
 cd cpp-module
 ./build.sh debug     # 含 sourcemap，适合开发调试
 ./build.sh release   # -O2 优化，适合发布
+```
+
+**Windows (PowerShell):**
+```powershell
+cd cpp-module
+.\build.ps1 debug    # 含 sourcemap，适合开发调试
+.\build.ps1 release  # -O2 优化，适合发布
 ```
 
 `build.sh` 内部执行：
