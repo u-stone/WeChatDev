@@ -3,7 +3,10 @@
 param (
     [Parameter(Position=0)]
     [ValidateSet("debug", "release")]
-    [string]$BuildType = "debug"
+    [string]$BuildType = "debug",
+
+    [Parameter()]
+    [switch]$Embed = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,10 +15,13 @@ $ScriptDir = $PSScriptRoot
 $BuildDir = Join-Path $ScriptDir "build"
 $EmsdkRoot = "D:\OpenSource\emsdk" 
 
+$EmbedSourceMap = if ($Embed) { "ON" } else { "OFF" }
+
 if ($BuildType -eq "release") {
     $CMakeBuildType = "Release"
 } else {
     $CMakeBuildType = "Debug"
+    Write-Host ">>> Debug build: Embed SourceMap = $EmbedSourceMap" -ForegroundColor Cyan
 }
 
 # ── Environment Activation ───────────────────────────────────────────────────
@@ -52,7 +58,8 @@ try {
         "$ScriptDir",
         "-G", "MinGW Makefiles",
         "-DCMAKE_BUILD_TYPE=$CMakeBuildType",
-        "-DINTERNAL_PYTHON_EXE=$PythonExe"
+        "-DINTERNAL_PYTHON_EXE=$PythonExe",
+        "-DEMBED_SOURCEMAP=$EmbedSourceMap"
     )
     
     & emcmake cmake @CmakeArgs
