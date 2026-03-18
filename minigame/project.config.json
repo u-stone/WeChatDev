@@ -41,6 +41,6 @@
   },
   "condition": {},
   "simulatorPluginLibVersion": {},
-  "isGameTourist": true,
+  "isGameTourist": false,
   "editorSetting": {}
 }
