@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C++ WASM Physics - Web Demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">C++ WASM Physics</h1>
+    <div id="canvas-container">
+      <canvas id="game-canvas"></canvas>
+    </div>
+    <div id="status" class="status">Loading WASM...</div>
+    <div class="info">
+      <p>20 个彩色粒子在重力作用下弹跳、相互碰撞</p>
+      <p>所有物理计算均在 C++ WASM 内核中执行</p>
+    </div>
+  </div>
+
+  <script type="module" src="js/wasm-loader.js"></script>
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>

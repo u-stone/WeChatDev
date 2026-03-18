@@ -9,6 +9,12 @@ minigame/wasm/demo.wasm
 minigame/wasm/demo.wasm.map
 minigame/wasm/demo.wasm.br
 
+# ── Web demo WASM output ──────────────────────────────────────────────────────
+web/wasm/demo.js
+web/wasm/demo.wasm
+web/wasm/demo.wasm.map
+web/wasm/demo.wasm.br
+
 # ── WeChat DevTools private config ────────────────────────────────────────────
 # Contains personal AppID, local paths, window positions, etc.
 minigame/project.private.config.json

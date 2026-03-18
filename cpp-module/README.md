@@ -213,26 +213,28 @@ source ~/emsdk/emsdk_env.sh
 **macOS / Linux:**
 ```bash
 cd cpp-module
-./build.sh debug     # 含 sourcemap，适合开发调试
-./build.sh release   # -O2 优化，适合发布
+./build.sh                    # Sourcemap 外置模式（默认）
+./build.sh debug --embed      # Sourcemap 内嵌模式
+./build.sh debug --dwarf      # DWARF 模式
+./build.sh release            # -O2 优化，适合发布
 ```
 
 **Windows (PowerShell):**
 ```powershell
 cd cpp-module
-.\build.ps1 debug    # 含 sourcemap，适合开发调试
-.\build.ps1 release  # -O2 优化，适合发布
+.\build.ps1 debug             # Sourcemap 外置模式（默认）
+.\build.ps1 debug -Embed      # Sourcemap 内嵌模式
+.\build.ps1 debug -Dwarf      # DWARF 模式
+.\build.ps1 release           # -O2 优化，适合发布
 ```
 
-`build.sh` 内部执行：
-```bash
-emcmake cmake <source_dir> -DCMAKE_BUILD_TYPE=Debug
-emmake make -j<cores>
-```
+### 调试模式说明
 
-- **`emcmake`**：包装 `cmake`，自动注入 Emscripten 工具链（设置 CC/CXX 为 emcc/em++）
-- **`emmake`**：包装 `make`，确保构建时 Emscripten 环境变量生效
-- 切换 debug/release 时，脚本会自动删除并重建 `build/` 目录，避免 CMake 缓存冲突
+| 模式 | 标志 | 输出文件 | 适用场景 |
+|------|------|---------|---------|
+| **sourcemap_external** *(默认)* | `-gsource-map` | `demo.wasm.map` | 微信开发者工具、需要外部 sourcemap 的环境 |
+| **sourcemap_embed** | `-gsource-map` | 内嵌在 `demo.wasm` | 需要单文件部署的场景 |
+| **dwarf** | `-g4` | 内置在 `demo.wasm` | Chrome DevTools 直接调试 C++ 源码 |
 
 ### 输出文件
 

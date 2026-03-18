@@ -1,4 +1,15 @@
 # build.ps1 — Compile C++ source to WebAssembly using Emscripten + CMake
+# 
+# Usage:
+#   .\build.ps1 debug                    — Debug build (sourcemap_external, default)
+#   .\build.ps1 debug -Embed             — Debug build (sourcemap_embed)
+#   .\build.ps1 debug -Dwarf             — Debug build (dwarf)
+#   .\build.ps1 release                  — Release build (optimised, no debug info)
+# 
+# Debug Modes:
+#   sourcemap_external (default) — Generates external .wasm.map file
+#   sourcemap_embed             — Embeds sourcemap as Data URI in .wasm
+#   dwarf                       — Uses DWARF debug symbols in .wasm
 
 param (
     [Parameter(Position=0)]
@@ -6,7 +17,10 @@ param (
     [string]$BuildType = "debug",
 
     [Parameter()]
-    [switch]$Embed = $false
+    [switch]$Embed = $false,
+
+    [Parameter()]
+    [switch]$Dwarf = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,13 +29,23 @@ $ScriptDir = $PSScriptRoot
 $BuildDir = Join-Path $ScriptDir "build"
 $EmsdkRoot = "D:\OpenSource\emsdk" 
 
-$EmbedSourceMap = if ($Embed) { "ON" } else { "OFF" }
-
 if ($BuildType -eq "release") {
     $CMakeBuildType = "Release"
+    $DebugMode = "none"
+    Write-Host ">>> Release build" -ForegroundColor Cyan
 } else {
     $CMakeBuildType = "Debug"
-    Write-Host ">>> Debug build: Embed SourceMap = $EmbedSourceMap" -ForegroundColor Cyan
+    if ($Dwarf) {
+        $DebugMode = "dwarf"
+        $ModeDesc = "dwarf (DWARF debug symbols)"
+    } elseif ($Embed) {
+        $DebugMode = "sourcemap_embed"
+        $ModeDesc = "sourcemap_embed (embedded Data URI)"
+    } else {
+        $DebugMode = "sourcemap_external"
+        $ModeDesc = "sourcemap_external (external .wasm.map)"
+    }
+    Write-Host ">>> Debug build: Mode = $ModeDesc" -ForegroundColor Cyan
 }
 
 # ── Environment Activation ───────────────────────────────────────────────────
@@ -59,7 +83,7 @@ try {
         "-G", "MinGW Makefiles",
         "-DCMAKE_BUILD_TYPE=$CMakeBuildType",
         "-DINTERNAL_PYTHON_EXE=$PythonExe",
-        "-DEMBED_SOURCEMAP=$EmbedSourceMap"
+        "-DDEBUG_MODE=$DebugMode"
     )
     
     & emcmake cmake @CmakeArgs
