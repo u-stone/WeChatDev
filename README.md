@@ -157,6 +157,8 @@ http-server -p 8080
 2. AppID 使用「**游客身份**」（或填入真实 AppID）
 3. 点击确定，模拟器中即可看到粒子物理模拟
 
+> **注意**：运行时可能会在控制台看到 `webapi_getwxaasyncsecinfo:fail` 错误。这是微信开发者工具内部的安全检查调用，**不影响实际运行**，可以安全忽略。该错误不会影响 WASM 加载和物理模拟的正常执行。
+
 ---
 
 ## 调试 C++（WebAssembly）
@@ -248,6 +250,7 @@ cd cpp-module
 | `emcc` 找不到 | `source ~/emsdk/emsdk_env.sh` |
 | CMake 配置失败 | 确认在 `cpp-module/` 目录内执行 `./build.sh` |
 | 切换 debug/release 后编译异常 | `build.sh` 会自动清理 `build/` 目录重新配置 |
+| **微信开发者工具报错 `webapi_getwxaasyncsecinfo:fail`** | **这是微信开发者工具内部安全检查，不影响实际运行，可忽略** |
 
 ---
 
