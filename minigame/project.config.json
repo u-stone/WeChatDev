@@ -1,7 +1,7 @@
 {
   "description": "WeChat Mini Game + C++ WASM Demo",
   "projectname": "wasm-demo",
-  "appid": "wx6ac3f5090a6b99c5",
+  "appid": "wx44ce985ec3fc8f11",
   "compileType": "miniGame",
   "libVersion": "3.15.0",
   "packOptions": {
