@@ -544,16 +544,18 @@ wasm://wasm/demo.wasm.map
 ```
 然后尝试用 HTTP fetch 这个 URL——但 `wasm://` 不是真实的网络协议，导致 `ERR_UNKNOWN_URL_SCHEME`。
 
+### 本项目解决方案
+使用 **本地 HTTP 调试服务器** 绕过协议限制。
+
+1.  **改写路径**：在编译时使用 `--source-map-base` 标志将 WASM 内部的 sourcemap 引用强制指向一个标准的 HTTP URL（例如 `http://127.0.0.1:3000/minigame/wasm/`）。
+2.  **托管源码**：运行 `minigame/debug-server.py` 启动一个支持 CORS 的静态服务器，将整个项目根目录暴露出来。
+3.  **结果**：DevTools 会成功从 HTTP 地址加载 `.map` 文件，并根据 map 内部的相对路径找到位于 `cpp-module/src` 的 C++ 源码。
+
+详细操作请参考 [docs/wasm-debug-server.md](./wasm-debug-server.md)。
+
 ### 影响
-- 小游戏**正常运行**不受影响（WASM 逻辑完全正确）
-- C++ 断点调试功能在该版本 DevTools 中**不可用**
-
-### 这是 DevTools 的已知限制
-`--source-map-base` 无论设置什么相对路径，都无法绕过这个问题，因为 DevTools 强制使用 `wasm://` 作为 WASM 模块的基准 URL。
-
-可能的解决途径（供参考，未经验证）：
-- 更新微信开发者工具到支持本地文件协议 WASM sourcemap 的版本
-- 将 `--source-map-base` 设为 DevTools 本地 HTTP 服务的绝对 URL（但 DevTools 端口每次可能变化）
+- ✅ 已通过 HTTP Server 方案完美解决。
+- ✅ 现在支持在微信开发者工具中进行 C++ 源码级断点调试。
 
 ---
 
