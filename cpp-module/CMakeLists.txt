@@ -68,7 +68,7 @@ target_link_options(demo PRIVATE
 
 # ── Build-type specific flags ─────────────────────────────────────────────────
 # Debug mode selection:
-#   sourcemap_external (default) — Generate external .wasm.map file
+#   sourcemap_external (default) — Generate external .wasm.map file (requires local HTTP server)
 #   sourcemap_embed             — Embed sourcemap as Data URI in .wasm
 #   dwarf                       — Use DWARF debug symbols in .wasm
 #   none                        — No debug symbols (release)
@@ -76,15 +76,19 @@ target_link_options(demo PRIVATE
 option(DEBUG_MODE "Debug mode: sourcemap_external (default), sourcemap_embed, or dwarf" "sourcemap_external")
 set(DEBUG_MODE_VALUES "sourcemap_external" "sourcemap_embed" "dwarf" "none")
 
+# The port and URL where you will run your local debug server
+set(WASM_DEBUG_PORT "3000" CACHE STRING "Local server port for WASM SourceMaps")
+set(WASM_DEBUG_URL "http://127.0.0.1:${WASM_DEBUG_PORT}/minigame/wasm/" CACHE STRING "Local server URL for WASM SourceMaps")
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(DEBUG_MODE STREQUAL "sourcemap_external")
-        # Sourcemap external mode (default): Generate external SourceMap
-        message(STATUS "Building in sourcemap_external debug mode (external .wasm.map file)")
-        target_link_options(demo PRIVATE "-gsource-map" "--source-map-base=./")
+        # Sourcemap external mode: Use an HTTP URL to bypass WeChat DevTools protocol restrictions
+        message(STATUS "Building in sourcemap_external mode. Server URL: ${WASM_DEBUG_URL}")
+        target_link_options(demo PRIVATE "-gsource-map" "--source-map-base=${WASM_DEBUG_URL}")
     elseif(DEBUG_MODE STREQUAL "sourcemap_embed")
-        # Sourcemap embed mode: Embed SourceMap as Data URI in WASM
+        # Sourcemap embed mode: Use Emscripten's native flag to embed the map as a Data URI
         message(STATUS "Building in sourcemap_embed debug mode (embedded Data URI)")
-        target_link_options(demo PRIVATE "-gsource-map" "--source-map-base=./")
+        target_link_options(demo PRIVATE "-gsource-map" "-sEMBED_SOURCE_MAP=1")
     elseif(DEBUG_MODE STREQUAL "dwarf")
         # DWARF mode: Generate DWARF debug info in WASM
         message(STATUS "Building in DWARF debug mode")

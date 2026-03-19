@@ -64,6 +64,7 @@ xcode-select --install
 
 ### 2. 安装 emsdk（Emscripten SDK）
 
+**macOS / Linux (Bash):**
 ```bash
 git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
 cd ~/emsdk
@@ -72,40 +73,36 @@ cd ~/emsdk
 source ./emsdk_env.sh
 ```
 
-**每次新开终端**都需要 `source ./emsdk_env.sh`。建议加入 shell 配置：
-
-```bash
-echo 'source ~/emsdk/emsdk_env.sh' >> ~/.zshrc   # zsh（macOS 默认）
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/emscripten-core/emsdk.git C:\emsdk
+cd C:\emsdk
+.\emsdk install latest
+.\emsdk activate latest
+& .\emsdk_env.ps1
 ```
 
-验证：
-
-```bash
-emcc --version   # emcc (Emscripten gcc/clang-like replacement + linker) 3.x.x
-```
-
-### 3. 微信开发者工具
-
-下载地址：https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html
+**每次新开终端**都需要激活环境。建议加入 shell 配置：
+- **macOS/Linux**: `echo 'source ~/emsdk/emsdk_env.sh' >> ~/.zshrc`
+- **Windows**: 建议将 `emsdk` 路径加入系统环境变量，或在当前窗口运行 `& C:\emsdk\emsdk_env.ps1`。
 
 ---
 
 ## 编译 C++ → WebAssembly
 
+**macOS / Linux (Bash):**
 ```bash
-cd WeChatDev/cpp-module
-
-./build.sh debug     # Debug 构建（默认）：含 sourcemap，支持 C++ 断点调试
-./build.sh release   # Release 构建：-O2 优化，体积更小
+cd cpp-module
+./build.sh debug     # Debug 构建（默认）：含 sourcemap
+./build.sh release   # Release 构建：-O2 优化
 ```
 
-构建成功后 `minigame/wasm/` 会出现：
-
-| 文件 | 说明 |
-|---|---|
-| `demo.js` | Emscripten 胶水代码 |
-| `demo.wasm` | WebAssembly 二进制 |
-| `demo.wasm.map` | C++ sourcemap（仅 debug） |
+**Windows (PowerShell):**
+```powershell
+cd cpp-module
+.\build.ps1 debug    # Debug 构建（默认）：含 sourcemap
+.\build.ps1 release   # Release 构建：-O2 优化
+```
 
 ---
 
@@ -115,30 +112,32 @@ Web Demo 可以在标准浏览器中运行，支持完整的 Chrome DevTools C++
 
 ### 快速启动（推荐）
 
-```bash
-# Windows PowerShell
+**Windows (PowerShell):**
+```powershell
 .\quickstart.ps1
+```
 
-# macOS/Linux
+**macOS / Linux (Bash):**
+```bash
 ./quickstart.sh
 ```
 
-脚本会自动：
-1. 检查并编译 C++ WASM 模块
-2. 启动本地 HTTP 服务器
-3. 在浏览器中打开项目
-
 ### 手动启动
 
-```bash
-cd WeChatDev/web
-
-# 方法 1：使用 Python
+**Windows (PowerShell):**
+```powershell
+cd web
 python -m http.server 8080
+# 或使用 Node.js
+npx http-server -p 8080 --cors
+```
 
-# 方法 2：使用 Node.js（需要先安装 http-server）
-npm install -g http-server
-http-server -p 8080
+**macOS / Linux (Bash):**
+```bash
+cd web
+python3 -m http.server 8080
+# 或使用 Node.js
+npx http-server -p 8080 --cors
 ```
 
 然后在浏览器中访问：`http://localhost:8080`
@@ -256,14 +255,23 @@ cd cpp-module
 
 ## 修改 C++ 后的开发循环
 
+**macOS / Linux (Bash):**
 ```bash
-# 1. 修改 C++ 源码（例如调整重力、添加新函数）
-vim cpp-module/src/physics/world.cpp
+# 1. 修改 C++ 源码
+vi cpp-module/src/physics/world.cpp
 
-# 2. 增量重新编译（比首次快很多）
+# 2. 增量重新编译
 cd cpp-module && ./build.sh debug
+```
 
-# 3. 微信开发者工具点击「编译」刷新小游戏
+**Windows (PowerShell):**
+```powershell
+# 1. 修改 C++ 源码
+# 使用 VS Code 或其他编辑器修改 cpp-module/src/physics/world.cpp
+
+# 2. 增量重新编译
+cd cpp-module
+.\build.ps1 debug
 ```
 
 ### 新增导出函数的步骤
