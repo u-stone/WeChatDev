@@ -7,12 +7,42 @@
  */
 
 #include <emscripten/emscripten.h>
+#include <stdexcept>
+#include <string>
 #include "physics/world.h"
 #include "math/vec2.h"
 
 static World g_world;
 
 extern "C" {
+
+// ── Exception Test ────────────────────────────────────────────────────────────
+
+/**
+ * test_exception(mode)
+ * mode 0: No exception
+ * mode 1: Throw std::runtime_error and catch it internally (returns 1)
+ * mode 2: Throw std::runtime_error and NOT catch it (WASM will crash/throw to JS)
+ */
+EMSCRIPTEN_KEEPALIVE
+int test_exception(int mode) {
+    if (mode == 0) return 0;
+
+    try {
+        if (mode == 1 || mode == 2) {
+            throw std::runtime_error("C++ Exception Test: Mode " + std::to_string(mode));
+        }
+    } catch (const std::exception& e) {
+        if (mode == 1) {
+            // Internal catch success
+            return 1;
+        }
+        // Rethrow for mode 2
+        throw;
+    }
+
+    return -1;
+}
 
 // ── World lifecycle ───────────────────────────────────────────────────────────
 

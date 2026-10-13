@@ -36,13 +36,16 @@ const DemoModule = require('../wasm/demo.js');
  * @property {(n:number)=>number}                 fibonacci
  * @property {(x:number,y:number)=>number}        vec2_length
  * @property {(x1:number,y1:number,x2:number,y2:number)=>number} vec2_dot
+ *
+ * Exception test
+ * @property {(mode:number)=>number}              test_exception
  */
 
-/**
+ /**
  * Initialise the WASM module and return all wrapped C-function bindings.
  * @returns {Promise<WasmApi>}
  */
-function loadWasm() {
+ function loadWasm() {
   return new Promise((resolve, reject) => {
     DemoModule({
       locateFile: function (filename) {
@@ -74,9 +77,12 @@ function loadWasm() {
         fibonacci:  m.cwrap('fibonacci',  N, [N]),
         vec2_length:m.cwrap('vec2_length',N, NN),
         vec2_dot:   m.cwrap('vec2_dot',   N, [N,N,N,N]),
+
+        // ── Exception Test ─────────────────────────────────────────────────
+        test_exception: m.cwrap('test_exception', N, [N]),
       });
     }).catch(reject);
   });
-}
+ }
 
 module.exports = { loadWasm };

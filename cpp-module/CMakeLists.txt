@@ -43,7 +43,9 @@ add_custom_command(TARGET demo POST_BUILD
 
 # ── Emscripten link flags ──────────────────────────────────────────────────────
 # Common flags for all build types
+target_compile_options(demo PRIVATE "-fexceptions")
 target_link_options(demo PRIVATE
+    "-fexceptions"
     # WebAssembly output
     "-sWASM=1"
     # Wrap output in a factory function so it can be require()'d in WeChat Mini Game
@@ -56,7 +58,8 @@ target_link_options(demo PRIVATE
 \"_particle_get_x\",\"_particle_get_y\",\
 \"_particle_get_vx\",\"_particle_get_vy\",\
 \"_particle_get_radius\",\"_particle_get_color\",\
-\"_add\",\"_fibonacci\",\"_vec2_length\",\"_vec2_dot\"\
+\"_add\",\"_fibonacci\",\"_vec2_length\",\"_vec2_dot\",\
+\"_test_exception\"\
 ]"
     # Expose cwrap so JS callers don't have to use raw pointer indices
     "-sEXPORTED_RUNTIME_METHODS=[\"cwrap\"]"
